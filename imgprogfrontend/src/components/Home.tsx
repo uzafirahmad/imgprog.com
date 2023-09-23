@@ -2,6 +2,7 @@ import React, { useRef, ChangeEvent, useState, useEffect } from "react";
 import "./Home.css";
 import axios from "axios";
 import ReactCrop, { Crop } from "react-image-crop";
+import { AiOutlineDownload, AiFillDelete } from 'react-icons/ai';
 import "react-image-crop/dist/ReactCrop.css";
 
 const Home = () => {
@@ -13,8 +14,10 @@ const Home = () => {
     height: 10,
   });
   const [images, setImages] = useState<string[]>([]);
+  const [qualitydisabled, setqualitydisabled] = useState<string>("");
   const [selectedImages, setSelectedImages] = useState<FileList | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
+  const [compression, setcompression] = useState<string>("80");
 
   const imageRef = useRef<HTMLImageElement | null>(null);
 
@@ -36,6 +39,19 @@ const Home = () => {
       setSelectedImages(selectedFiles);
       setCurrentImageIndex(0); // Start with the first image
       displayImage(selectedFiles[0]);
+    }
+  };
+
+  const handleDeleteClick = async (imagePath: any) => {
+    try {
+      const res = await axios.delete(
+        `http://localhost:5000/delete${imagePath}`
+      );
+      if (res.data.message === "Image deleted successfully!") {
+        fetchImages(); // Refresh the images after deleting
+      }
+    } catch (err) {
+      console.error("An error occurred:", err);
     }
   };
 
@@ -85,54 +101,48 @@ const Home = () => {
           crop.height * scaleY
         );
 
-        canvas.toBlob(async (blob) => {
-          if (blob) {
-            const formData = new FormData();
-            formData.append("image", blob, "cropped-image.png");
+        // Compress the image and change format to JPEG
+        canvas.toBlob(
+          async (blob) => {
+            if (blob) {
+              const formData = new FormData();
+              formData.append("image", blob, "cropped-image.jpeg"); // Changed to .jpeg
 
-            // Upload image to server
-            try {
-              const res = await axios.post(
-                "http://localhost:5000/upload",
-                formData,
-                {
-                  headers: {
-                    "Content-Type": "multipart/form-data",
-                  },
-                }
-              );
+              // Upload image to server
+              try {
+                const res = await axios.post(
+                  "http://localhost:5000/upload",
+                  formData,
+                  {
+                    headers: {
+                      "Content-Type": "multipart/form-data",
+                    },
+                  }
+                );
+                console.log(res.data.message); // Image uploaded successfully!
+              } catch (err) {
+                console.error("An error occurred:", err);
+              }
 
-              console.log(res.data.message); // Image uploaded successfully!
-            } catch (err) {
-              console.error("An error occurred:", err);
+              // Move to the next image if available
+              const nextIndex = currentImageIndex + 1;
+              if (nextIndex < selectedImages.length) {
+                setCurrentImageIndex(nextIndex);
+                displayImage(selectedImages[nextIndex]);
+              } else {
+                document
+                  .getElementById("floatingimagediv")
+                  ?.classList.remove("active");
+                document
+                  .getElementById("dimscreen")
+                  ?.classList.remove("active");
+                fetchImages();
+              }
             }
-
-            // const url = URL.createObjectURL(blob);
-            // setCroppedImage(url);
-
-            // // Create a temporary link element to trigger the download
-            // const a = document.createElement("a");
-            // a.href = url;
-            // a.download = "cropped-image.png";
-            // a.click();
-
-            // // Clean up
-            // URL.revokeObjectURL(url);
-
-            // Move to the next image if available
-            const nextIndex = currentImageIndex + 1;
-            if (nextIndex < selectedImages.length) {
-              setCurrentImageIndex(nextIndex);
-              displayImage(selectedImages[nextIndex]);
-            } else {
-              document
-                .getElementById("floatingimagediv")
-                ?.classList.remove("active");
-              document.getElementById("dimscreen")?.classList.remove("active");
-              fetchImages();
-            }
-          }
-        }, "image/png");
+          },
+          "image/jpeg",
+          parseFloat(compression) / 100
+        ); // MIME type changed to image/jpeg, quality remains at 0.8
       }
     }
   };
@@ -149,8 +159,53 @@ const Home = () => {
         >
           <img src={""} id="roactcroppedimagesrc" ref={imageRef} />
         </ReactCrop>
+        <div className="cropperdoubletag">
+          <span className="cropperspantag">Quality(%)</span>
+          <input
+            type="text"
+            value={compression}
+            placeholder="1-100"
+            onChange={(e) => {
+              let inputValue = e.target.value;
+              let isNumber = /^[0-9]*$/.test(inputValue);
+
+              if (isNumber) {
+                if (parseFloat(inputValue) > 100) {
+                  setqualitydisabled("Quality cant be greater than 100");
+                } else if (parseFloat(inputValue) < 1) {
+                  setqualitydisabled("Quality cant be less than 1");
+                } else {
+                  setqualitydisabled("");
+                }
+                setcompression(inputValue);
+              } else {
+                setqualitydisabled("Quality not a number");
+              }
+            }}
+            className="cropperinputtag"
+          />
+        </div>
+        {/* <div className="cropperdoubletag">
+          <span className="cropperspantag">Rotate(deg)</span>
+          <input
+          placeholder="1-360"
+            type="text"
+            // value={inputValue}
+            // onChange={handleInputChange}
+            className="cropperinputtag"
+          />
+        </div> */}
         <div id="floatingimagedivbuttonsmaster">
-          <button id="floatingimagedivbuttonsave" onClick={handleDownloadClick}>
+          <button
+            id="floatingimagedivbuttonsave"
+            onClick={() => {
+              if (qualitydisabled === "") {
+                handleDownloadClick();
+              } else {
+                alert(qualitydisabled);
+              }
+            }}
+          >
             Save
           </button>
           <button
@@ -196,16 +251,30 @@ const Home = () => {
         }}
       >
         <div id="imgprogtitle">ImgProg.</div>
+
         <div id="imagecollection">
           {images.map((image, index) => (
-            <img
-              key={index}
-              src={`http://localhost:5000${image}`}
-              alt=""
-              className="stockimage"
-            />
+            <div className="image-container" key={index}>
+              <img
+                src={`http://localhost:5000${image}`}
+                alt=""
+                className="stockimage"
+              />
+              <div className="download-button-container">
+                <a href={`http://localhost:5000${image}`} target="_blank" download>
+                  <button className="download-button"><AiOutlineDownload style={{fontSize:"24px"}}/></button>
+                </a>
+                <button
+                  className="delete-button"
+                  onClick={() => handleDeleteClick(image)}
+                >
+                  <AiFillDelete style={{fontSize:"24px",color:"white"}}/>
+                </button>
+              </div>
+            </div>
           ))}
         </div>
+
         <input
           type="file"
           id="fileinput"

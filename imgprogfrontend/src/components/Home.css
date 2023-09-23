@@ -7,21 +7,69 @@
 }
 
 .image-container {
-    position: relative;
-    display: inline-block;
-  }
-  
-  .delete-button {
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    display: none;
-  }
-  
-  .image-container:hover .delete-button {
-    display: block;
-  }
-  
+  position: relative;
+  display: inline-block;
+}
+
+.download-button-container {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  display: block;  /* Initially hidden */
+}
+
+.image-container:hover .download-button-container {
+  display: block;  /* Show only when hovering over .image-container */
+}
+
+.delete-button{
+  background-color: #FF3F3F;
+  border: none;
+  color: white;
+  padding: 3px 5px;
+  /* padding: 7px 15px; */
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin-left: 5px;
+  /* margin: 4px 0px; */
+  cursor: pointer;
+}
+
+.download-button {
+  background-color: #007bff;
+  border: none;
+  color: white;
+  padding: 3px 5px;
+  /* padding: 7px 15px; */
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 0px;
+  cursor: pointer;
+}
+
+.cropperinputtag{
+  outline: none;
+  border: none;
+  background-color: #1c1e2b;
+  color: white;
+  padding: 5px;
+}
+
+.cropperdoubletag{
+  margin: 10px 0px;
+  display: flex;
+  flex-direction: row;
+}
+
+.cropperspantag{
+  width: 100px;
+  font-size: 16px;
+  color: white;
+}
 
 #dimscreen {
   visibility: hidden;
@@ -127,6 +175,7 @@
   #imagecollection {
     width: 100%;
     display: grid;
+    gap: 1vw;
     grid-template-columns: repeat(5, 1fr);
   }
 
@@ -152,6 +201,7 @@
     background-color: #29ab87;
     outline: none;
     border: none;
+    z-index: 999;
   }
 
   .custom-react-crop {
@@ -174,6 +224,7 @@
   #imagecollection {
     width: 100%;
     display: grid;
+    gap: 10px;
     grid-template-columns: repeat(3, 1fr);
   }
 
@@ -189,6 +240,7 @@
     align-items: center;
     position: fixed;
     bottom: 15px;
+    z-index: 999;
     right: 15px;
     color: white;
     height: 40px;
@@ -221,6 +273,7 @@
   #imagecollection {
     width: 100%;
     display: grid;
+    gap: 10px;
     grid-template-columns: repeat(2, 1fr);
   }
 
@@ -238,6 +291,7 @@
     bottom: 15px;
     right: 15px;
     color: white;
+    z-index: 999;
     height: 40px;
     width: 40px;
     font-size: 24px;
